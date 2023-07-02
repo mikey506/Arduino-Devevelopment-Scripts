@@ -14,7 +14,7 @@ void setup() {
   Serial.println("------------------------------------");
   Serial.print("Board: Arduino Uno");
   Serial.print(", CPU: ");
-  Serial.print(F_CPU / 1000000);
+  Serial.print(F_CPU / 10000000);
   Serial.println(" MHz");
   Serial.print("Flash Memory: ");
   Serial.print((int)FLASHEND / 1024);
@@ -23,50 +23,33 @@ void setup() {
   Serial.print((int)RAMEND / 1024);
   Serial.println(" KB");
   Serial.println("------------------------------------");
-  Serial.println("Pinout Information (Condensed)");
+  Serial.println("Pinout Information (Optimized Table)");
   Serial.println("------------------------------------");
 }
 
 void loop() {
-  // Read and print the state of each pin
-  for (int pin = 0; pin < totalPins; ++pin) {
-    int pinState = digitalRead(pin);
-    Serial.print("P");
-    Serial.print(pin);
-    Serial.print(":");
-    Serial.print(pinState);
+  // Read and print the state of each pin in a table
+  Serial.println("------------------------------------");
+  Serial.println("| Pin  | State | Capabilities        |");
+  Serial.println("------------------------------------");
 
-    // Check if the pin is capable of PWM output
-    if (pin == 3 || pin == 5 || pin == 6 || pin == 9 || pin == 10 || pin == 11) {
-      Serial.print(" PWM");
-    }
+  for (int row = 0; row < totalPins; row += 3) {
+    Serial.print("| P");
+    Serial.print(row);
+    Serial.print("  |  ");
+    printPinInfo(row);
 
-    // Check if the pin is an analog input
-    if (pin >= 14 && pin <= 19) {
-      Serial.print(" ANALOG");
-    }
+    Serial.print("  | P");
+    Serial.print(row + 1);
+    Serial.print("  |  ");
+    printPinInfo(row + 1);
 
-    // Print additional information about the pin
-    switch (pin) {
-      case 0:
-        Serial.print(" RX");
-        break;
-      case 1:
-        Serial.print(" TX");
-        break;
-      case 13:
-        Serial.print(" LED");
-        break;
-      default:
-        // No additional information for other pins
-        break;
-    }
+    Serial.print("  | P");
+    Serial.print(row + 2);
+    Serial.print("  |  ");
+    printPinInfo(row + 2);
 
-    if (pin < totalPins - 1) {
-      Serial.print(", ");
-    } else {
-      Serial.println();
-    }
+    Serial.println("  |");
   }
 
   // Print memory and CPU usage
@@ -79,7 +62,60 @@ void loop() {
   Serial.println("%");
   Serial.println("------------------------------------");
 
-  delay(1000);  // Delay for better readability
+  // Print software-related diagnostic information
+  Serial.println("Additional Diagnostic Information");
+  Serial.println("------------------------------------");
+  // Print software info
+  Serial.print("Software Version: ");
+  Serial.println(__VERSION__);
+  Serial.print("Compiler Optimization Level: ");
+#ifdef __OPTIMIZE__
+  Serial.print(__OPTIMIZE__);
+#else
+  Serial.print("None");
+#endif
+  Serial.println();
+  Serial.print("Kernel Version: ");
+#ifdef __KERNEL_VERSION__
+  Serial.println(__KERNEL_VERSION__);
+#else
+  Serial.println("N/A");
+#endif
+  Serial.println("------------------------------------");
+
+  delay(100000);  // Delay for better readability
+}
+
+// Function to print pin information
+void printPinInfo(int pin) {
+  int pinState = digitalRead(pin);
+  Serial.print(pinState);
+
+  // Check if the pin is capable of PWM output
+  if (pin == 3 || pin == 5 || pin == 6 || pin == 9 || pin == 10 || pin == 11) {
+    Serial.print(" PWM");
+  }
+
+  // Check if the pin is an analog input
+  if (pin >= 14 && pin <= 19) {
+    Serial.print(" ANALOG");
+  }
+
+  // Print additional information about the pin
+  switch (pin) {
+    case 0:
+      Serial.print(" RX");
+      break;
+    case 1:
+      Serial.print(" TX");
+      break;
+    case 13:
+      Serial.print(" LED");
+      break;
+    default:
+      // No additional information for other pins
+      break;
+  }
 }
 
 // Function to calculate free SRAM
