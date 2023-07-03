@@ -1,4 +1,4 @@
-**env_control.h**
+# **env_control.h**
 
 This script is an example of a temperature and humidity monitoring system using an Arduino board and the AM2320 sensor. Below is the full documentation for using this script, including the libraries used and pinout instructions.
 
