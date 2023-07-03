@@ -1,4 +1,4 @@
-# **env_control.h**
+# **env_control_arduino_uno.h**
 
 
 <img src="https://i.imgur.com/fYrUBhl.png" width=50% height=50%>
@@ -51,4 +51,12 @@ Make sure to connect the SDA and SCL pins of the AM2320 sensor to the correspond
 
 Once you have the hardware set up and the libraries installed, you can upload the script to your Arduino board and monitor the temperature and humidity readings. The script will print the readings, relay state information, and system information to the serial monitor. Additionally, it checks for high temperature or humidity conditions and prints a message if detected.
 
+# env_control_HLK-W801.h
 
+This is a revision of the Arduino Uno Script designed to work with the HLK-W801 development board which has Wifi and Bluetooth, wifi functionality was added and a small ssh server also.
+
+![HLK-W801](https://i.imgur.com/PWb0hHD.png)
+
+Please note that you will need to replace "YOUR_WIFI_SSID" and "YOUR_WIFI_PASSWORD" with your actual Wi-Fi credentials. Additionally, make sure you have installed the necessary libraries (Adafruit_Sensor, Adafruit_AM2320, ESP8266WiFi, ESPAsyncWebServer) using the Arduino Library Manager before uploading the code to your board.
+
+![GPIO Info](https://i.imgur.com/BV8bf6W.png)
