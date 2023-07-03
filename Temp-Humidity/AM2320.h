@@ -4,7 +4,7 @@
 
 Adafruit_AM2320 am2320;
 unsigned long previousTime = 0;
-unsigned long interval = 2000;  // 2-second interval
+unsigned long interval = 30000;  // 30-second interval
 
 void setup() {
   Serial.begin(9600);
