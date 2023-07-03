@@ -1,6 +1,6 @@
-# Catalex MicroSD Card Adapter v1.0
+# Catalex MicroSD Card Adapter v1.0 (sdcard_catalex.h)
 
-[Pinout](https://mschoeffler.com/wp-content/uploads/2017/02/fritzing_bb.png)
+![Pinout](https://mschoeffler.com/wp-content/uploads/2017/02/fritzing_bb.png)
 
 Make sure you have the necessary libraries installed. You can install them through the Arduino Library Manager. Look for the "SD" library by Adafruit and the "SPI" library by Arduino.
 
