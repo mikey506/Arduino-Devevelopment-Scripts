@@ -28,8 +28,9 @@ Make sure to connect the relay pins to the appropriate GPIO pins on your Arduino
 
 Additionally, the script communicates with the AM2320 sensor using the I2C protocol. The sensor is connected to the Arduino's I2C bus, which typically uses the SDA (data) and SCL (clock) pins. The I2C communication is handled by the Wire library, and the initialization of the sensor is done using the am2320.begin() function in the setup() function:
 
-**Wire.begin();
-am2320.begin();**
+**Wire.begin();**
+
+**am2320.begin();**
 
 Make sure to connect the SDA and SCL pins of the AM2320 sensor to the corresponding pins on your Arduino board.
 
