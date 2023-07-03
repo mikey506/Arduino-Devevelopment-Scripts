@@ -16,4 +16,4 @@ In the Library Manager, search for each library by name: "Wire", "Adafruit Senso
 Click on each library and click the "Install" button to install them.
 Make sure to install the latest versions of the libraries to ensure compatibility and access to the necessary functions.
 
-![AM2320 Sensor GPIO]([https://images.prismic.io/circuito/8e3a980f0f964cc539b4cbbba2654bb660db6f52_arduino-uno-pinout-diagram.png](https://www.makerguides.com/wp-content/uploads/2020/10/AM2320-digital-temperature-and-humidity-sensor-with-Arduino-wiring-diagram-schematic-featured-image.png)https://www.makerguides.com/wp-content/uploads/2020/10/AM2320-digital-temperature-and-humidity-sensor-with-Arduino-wiring-diagram-schematic-featured-image.png)
+![AM2320 Sensor GPIO](https://www.makerguides.com/wp-content/uploads/2020/10/AM2320-digital-temperature-and-humidity-sensor-with-Arduino-wiring-diagram-schematic-featured-image.png)
