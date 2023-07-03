@@ -1,8 +1,9 @@
+#include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_AM2320.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266SSH.h>
+#include <ESPAsyncWebServer.h>
 
 const int HIGH_TEMPERATURE_THRESHOLD = 30;
 const int HIGH_HUMIDITY_THRESHOLD = 70;
@@ -15,32 +16,38 @@ const int RELAY_2_PIN = 3;
 const int RELAY_3_PIN = 4;
 
 Adafruit_AM2320 am2320;
-WiFiServer sshServer(22);
+AsyncWebServer server(80);
 
 void setup() {
+  Serial.begin(9600);
   Wire.begin();
   am2320.begin();
-  
+
   // Set up relay pins
   pinMode(RELAY_1_PIN, OUTPUT);
   pinMode(RELAY_2_PIN, OUTPUT);
   pinMode(RELAY_3_PIN, OUTPUT);
-  
-  // Print initialization complete message
-  Serial.begin(9600);
-  Serial.println("Initialization complete");
-  
+
   // Connect to Wi-Fi
-  connectToWiFi();
-  
-  // Start SSH server
-  sshServer.begin();
+  WiFi.begin("YOUR_WIFI_SSID", "YOUR_WIFI_PASSWORD");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+
+  // Set up web server routes
+  server.on("/", handleRoot);
+  server.on("/setThresholds", handleSetThresholds);
+
+  // Start the server
+  server.begin();
+
+  // Print initialization complete message
+  Serial.println("Initialization complete");
 }
 
 void loop() {
-  // Handle SSH client connections
-  handleSSHClient();
-  
   // Read temperature and humidity
   float temperature = readTemperature();
   float humidity = readHumidity();
@@ -55,18 +62,15 @@ void loop() {
   Serial.print(" %");
   printTrend(getHumidityTrend(humidity));
   Serial.println();
-  
+
   // Print relay state information
   printRelayState();
-  
-  // Print system information
-  printSystemInfo();
-  
+
   // Check for high temperature or humidity
   if (temperature > HIGH_TEMPERATURE_THRESHOLD || humidity > HIGH_HUMIDITY_THRESHOLD) {
     Serial.println("Last Relay Change: High temperature or humidity detected!");
   }
-  
+
   delay(10000); // Delay for 10 seconds
 }
 
@@ -104,37 +108,6 @@ void printRelayState() {
   Serial.println();
 }
 
-void printSystemInfo() {
-  // Print CPU information
-  Serial.print("CPU Frequency: ");
-  Serial.print(F_CPU / 1000000);
-  Serial.print(" MHz / ");
-
-  // Print memory information
-  Serial.print("Memory: ");
-  Serial.print(getTotalMemory());
-  Serial.print(" - ");
-  Serial.print(getUsedMemory());
-  Serial.print(" bytes (Used) / ");
-
-  // Print storage information
-  Serial.print("Storage: ");
-  Serial.print(getTotalStorage() / 1024);
-  Serial.print(" - ");
-  Serial.print(getUsedStorage() / 1024);
-  Serial.println(" KB (Used)");
-
-  Serial.print("Variables >> ");
-  Serial.print(" High Temp: ");
-  Serial.print(HIGH_TEMPERATURE_THRESHOLD);
-  Serial.print(" / High Humidity: ");
-  Serial.print(HIGH_HUMIDITY_THRESHOLD);
-  Serial.print("/ Low Temp: ");
-  Serial.print(LOW_TEMPERATURE_THRESHOLD);
-  Serial.print("/ Low Humidity: ");
-  Serial.println(LOW_HUMIDITY_THRESHOLD);
-}
-
 float readTemperature() {
   return am2320.readTemperature();
 }
@@ -143,60 +116,40 @@ float readHumidity() {
   return am2320.readHumidity();
 }
 
-unsigned int getTotalMemory() {
-  extern unsigned int __data_start, __data_end, __bss_end;
-  return (unsigned int)&__data_end - (unsigned int)&__data_start + (unsigned int)&__bss_end;
+void handleRoot(AsyncWebServerRequest *request) {
+  // Build the HTML response with sensor and relay information
+  String html = "<html><body>";
+  html += "<h1>Sensor and Relay Information</h1>";
+  html += "<h2>Temperature: " + String(readTemperature()) + " °C</h2>";
+  html += "<h2>Humidity: " + String(readHumidity()) + " %</h2>";
+  html += "<h2>Relay State:</h2>";
+  html += "<p>R1: " + String(digitalRead(RELAY_1_PIN) == HIGH ? "ON" : "OFF") + "</p>";
+  html += "<p>R2: " + String(digitalRead(RELAY_2_PIN) == HIGH ? "ON" : "OFF") + "</p>";
+  html += "<p>R3: " + String(digitalRead(RELAY_3_PIN) == HIGH ? "ON" : "OFF") + "</p>";
+  html += "<h2>Thresholds:</h2>";
+  html += "<p>High Temperature: " + String(HIGH_TEMPERATURE_THRESHOLD) + "</p>";
+  html += "<p>High Humidity: " + String(HIGH_HUMIDITY_THRESHOLD) + "</p>";
+  html += "<p>Low Temperature: " + String(LOW_TEMPERATURE_THRESHOLD) + "</p>";
+  html += "<p>Low Humidity: " + String(LOW_HUMIDITY_THRESHOLD) + "</p>";
+  html += "</body></html>";
+
+  // Send the response
+  request->send(200, "text/html", html);
 }
 
-unsigned int getUsedMemory() {
-  extern unsigned int __heap_start;
-  return (unsigned int)&__heap_start - 0x20000000;
-}
+void handleSetThresholds(AsyncWebServerRequest *request) {
+  // Read the new threshold values from the request parameters
+  if (request->hasParam("highTemp") && request->hasParam("highHumidity") &&
+      request->hasParam("lowTemp") && request->hasParam("lowHumidity")) {
+    HIGH_TEMPERATURE_THRESHOLD = request->getParam("highTemp")->value().toInt();
+    HIGH_HUMIDITY_THRESHOLD = request->getParam("highHumidity")->value().toInt();
+    LOW_TEMPERATURE_THRESHOLD = request->getParam("lowTemp")->value().toInt();
+    LOW_HUMIDITY_THRESHOLD = request->getParam("lowHumidity")->value().toInt();
 
-unsigned int getTotalStorage() {
-  return getSketchSize();
-}
-
-unsigned int getUsedStorage() {
-  return getSketchSize() - getFreeSketchSpace();
-}
-
-unsigned int getSketchSize() {
-  extern unsigned int __data_start;
-  return (unsigned int)&__data_start - 0x20000000;
-}
-
-unsigned int getFreeSketchSpace() {
-  extern unsigned int __heap_start;
-  return (unsigned int)&__heap_start - 0x20000000;
-}
-
-void connectToWiFi() {
-  // Connect to Wi-Fi network
-  char ssid[] = "YOUR_WIFI_SSID";
-  char password[] = "YOUR_WIFI_PASSWORD";
-  
-  Serial.print("Connecting to Wi-Fi...");
-  WiFi.begin(ssid, password);
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  
-  Serial.println();
-  Serial.print("Connected to Wi-Fi. IP Address: ");
-  Serial.println(WiFi.localIP());
-}
-
-void handleSSHClient() {
-  // Check for SSH client connection
-  WiFiClient sshClient = sshServer.available();
-  
-  if (sshClient) {
-    Serial.println("New SSH client connected");
-    ESP8266SSH.handleClient(sshClient);
-    sshClient.stop();
-    Serial.println("SSH client disconnected");
+    // Send a success message
+    request->send(200, "text/plain", "Thresholds updated successfully");
+  } else {
+    // Send an error message if the request parameters are missing
+    request->send(400, "text/plain", "Invalid request parameters");
   }
 }
