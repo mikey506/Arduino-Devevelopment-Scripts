@@ -2,3 +2,4 @@
 
 ![4key Module](https://m.media-amazon.com/images/I/519Eu7mwtSL._AC_UF894,1000_QL80_.jpg)
 ![Pinout](https://i.imgur.com/UNRjTgs.png)
+![Output](https://i.imgur.com/rRzHn7S.png)
