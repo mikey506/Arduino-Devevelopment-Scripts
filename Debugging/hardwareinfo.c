@@ -4,23 +4,35 @@ const int totalPins = 20;  // Total number of GPIO pins on Arduino Uno
 void setup() {
   Serial.begin(9600);  // Initialize serial communication
 
-  // Set all pins as inputs
-  for (int pin = 0; pin < totalPins; ++pin) {
-    pinMode(pin, INPUT);
-  }
-
   // Print board information
   Serial.println("Arduino Uno Debug Information");
   Serial.println("------------------------------------");
-  Serial.print("Board: Arduino Uno");
-  Serial.print(", CPU: ");
-  Serial.print(F_CPU / 10000000);
+  Serial.print("Board Information:\n");
+  Serial.print("Model and Variant: Arduino Uno");
+  Serial.print(", CPU Architecture: ");
+#ifdef __AVR__
+  Serial.print("AVR");
+#elif defined(__SAM3X8E__)
+  Serial.print("SAM (ARM)");
+#elif defined(ESP8266)
+  Serial.print("ESP8266");
+#elif defined(ESP32)
+  Serial.print("ESP32");
+#else
+  Serial.print("Unknown");
+#endif
+  Serial.print(", Clock Frequency: ");
+  Serial.print(F_CPU / 1000000);
   Serial.println(" MHz");
-  Serial.print("Flash Memory: ");
+  Serial.print("Memory Information:\n");
+  Serial.print("Flash Memory Size: ");
   Serial.print((int)FLASHEND / 1024);
   Serial.println(" KB");
-  Serial.print("SRAM: ");
+  Serial.print("SRAM Size: ");
   Serial.print((int)RAMEND / 1024);
+  Serial.println(" KB");
+  Serial.print("EEPROM Size: ");
+  Serial.print((int)E2END / 1024);
   Serial.println(" KB");
   Serial.println("------------------------------------");
   Serial.println("Pinout Information (Optimized Table)");
@@ -63,9 +75,8 @@ void loop() {
   Serial.println("------------------------------------");
 
   // Print software-related diagnostic information
-  Serial.println("Additional Diagnostic Information");
+  Serial.println("Software Information:");
   Serial.println("------------------------------------");
-  // Print software info
   Serial.print("Software Version: ");
   Serial.println(__VERSION__);
   Serial.print("Compiler Optimization Level: ");
@@ -75,15 +86,8 @@ void loop() {
   Serial.print("None");
 #endif
   Serial.println();
-  Serial.print("Kernel Version: ");
-#ifdef __KERNEL_VERSION__
-  Serial.println(__KERNEL_VERSION__);
-#else
-  Serial.println("N/A");
-#endif
-  Serial.println("------------------------------------");
 
-  delay(100000);  // Delay for better readability
+  delay(1000);  // Delay for better readability
 }
 
 // Function to print pin information
@@ -101,21 +105,7 @@ void printPinInfo(int pin) {
     Serial.print(" ANALOG");
   }
 
-  // Print additional information about the pin
-  switch (pin) {
-    case 0:
-      Serial.print(" RX");
-      break;
-    case 1:
-      Serial.print(" TX");
-      break;
-    case 13:
-      Serial.print(" LED");
-      break;
-    default:
-      // No additional information for other pins
-      break;
-  }
+  Serial.print("    ");
 }
 
 // Function to calculate free SRAM
