@@ -1,86 +1,163 @@
+#include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_AM2320.h>
 
-// Pinout Configuration
-const int relayPins[] = {2, 3, 4, 5, 6, 7, 8, 9};  // GPIO pins connected to the relay board
-const int numRelays = sizeof(relayPins) / sizeof(relayPins[0]);
+const int HIGH_TEMPERATURE_THRESHOLD = 30;
+const int HIGH_HUMIDITY_THRESHOLD = 70;
+const int LOW_TEMPERATURE_THRESHOLD = 15;
+const int LOW_HUMIDITY_THRESHOLD = 40;
 
-// Thresholds
-const float HIGH_TEMPERATURE_THRESHOLD = 30.0;  // High temperature threshold in Celsius
-const float LOW_TEMPERATURE_THRESHOLD = 20.0;   // Low temperature threshold in Celsius
-const float HIGH_HUMIDITY_THRESHOLD = 60.0;     // High humidity threshold in percentage
-const float LOW_HUMIDITY_THRESHOLD = 40.0;      // Low humidity threshold in percentage
+// Relay Pins
+const int RELAY_1_PIN = 2;
+const int RELAY_2_PIN = 3;
+const int RELAY_3_PIN = 4;
 
 Adafruit_AM2320 am2320;
-unsigned long previousTime = 0;
-unsigned long interval = 30000;  // 30-second interval
 
-// Relay Control Function
-void controlRelay(int relayNumber, bool state, float temperature, float humidity) {
-  if (relayNumber >= 1 && relayNumber <= numRelays) {  // Check if relay number is valid
-    int relayPin = relayPins[relayNumber - 1];  // Map relay number to pin index
-    digitalWrite(relayPin, state ? LOW : HIGH);  // Set relay pin state based on desired state
+void setup() {
+  Serial.begin(9600);
+  Wire.begin();
+  am2320.begin();
+
+  // Set up relay pins
+  pinMode(RELAY_1_PIN, OUTPUT);
+  pinMode(RELAY_2_PIN, OUTPUT);
+  pinMode(RELAY_3_PIN, OUTPUT);
+
+  // Print initialization complete message
+  Serial.println("Initialization complete");
+}
+
+void loop() {
+  // Read temperature and humidity
+  float temperature = readTemperature();
+  float humidity = readHumidity();
+  Serial.println("-----------------------------------");
+  // Print temperature and humidity information with trend
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.print(" °C");
+  printTrend(getTemperatureTrend(temperature));
+  Serial.print("\tHumidity: ");
+  Serial.print(humidity);
+  Serial.print(" %");
+  printTrend(getHumidityTrend(humidity));
+  Serial.println();
+
+  // Print relay state information
+  printRelayState();
+
+  // Print system information
+  printSystemInfo();
+
+  // Check for high temperature or humidity
+  if (temperature > HIGH_TEMPERATURE_THRESHOLD || humidity > HIGH_HUMIDITY_THRESHOLD) {
+    Serial.println("Last Relay Change: High temperature or humidity detected!");
+  }
+
+  delay(10000); // Delay for 10 seconds
+}
+
+void printTrend(float value) {
+  if (value > 0) {
+    Serial.print(" (+)");
+  } else if (value < 0) {
+    Serial.print(" (-)");
+  } else {
+    Serial.print(" (=)");
   }
 }
 
-// Function to print relay information
-void printRelayInfo() {
-  Serial.print("Relay Info: ");
-  for (int i = 1; i <= numRelays; i++) {
-    Serial.print("R");
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print(digitalRead(relayPins[i - 1]) == LOW ? "ON" : "OFF");
-    Serial.print(" | ");
-  }
+float getTemperatureTrend(float currentTemperature) {
+  // Code to calculate temperature trend goes here
+  // Replace with actual temperature trend calculation logic
+  return random(-1, 2); // Returns -1, 0, or 1 randomly
+}
+
+float getHumidityTrend(float currentHumidity) {
+  // Code to calculate humidity trend goes here
+  // Replace with actual humidity trend calculation logic
+  return random(-1, 2); // Returns -1, 0, or 1 randomly
+}
+
+void printRelayState() {
+  // Print relay state information
+  Serial.print("Relay State: ");
+  Serial.print("R1: ");
+  Serial.print(digitalRead(RELAY_1_PIN) == HIGH ? "ON" : "OFF");
+  Serial.print(" / R2: ");
+  Serial.print(digitalRead(RELAY_2_PIN) == HIGH ? "ON" : "OFF");
+  Serial.print(" / R3: ");
+  Serial.print(digitalRead(RELAY_3_PIN) == HIGH ? "ON" : "OFF");
   Serial.println();
 }
 
-// Setup Function
-void setup() {
-  Serial.begin(9600);  // Initialize serial communication
-  while (!Serial);     // Wait for the serial monitor to open
-  
-  for (int i = 0; i < numRelays; i++) {
-    pinMode(relayPins[i], OUTPUT);  // Set relay pins as OUTPUT
-    controlRelay(i + 1, false, 0.0, 0.0);  // Turn off all relays initially
-  }
+void printSystemInfo() {
+  // Print CPU information
+  Serial.print("CPU Frequency: ");
+  Serial.print(F_CPU / 1000000);
+  Serial.print(" MHz / ");
 
-  Wire.begin();
-  am2320.begin();
+  // Print memory information
+  Serial.print("Memory: ");
+  Serial.print(getTotalMemory());
+  Serial.print(" - ");
+  Serial.print(getUsedMemory());
+  Serial.print(" bytes (Used) / ");
+
+  // Print storage information
+  Serial.print("Storage: ");
+  Serial.print(getTotalStorage() / 1024);
+  Serial.print(" - ");
+  Serial.print(getUsedStorage() / 1024);
+  Serial.println(" KB (Used)");
+
+  Serial.print("Variables >> ");
+  Serial.print(" High Temp: ");
+  Serial.print(HIGH_TEMPERATURE_THRESHOLD);
+  Serial.print(" / High Humidity: ");
+  Serial.print(HIGH_HUMIDITY_THRESHOLD);
+  Serial.print("/ Low Temp: ");
+  Serial.print(LOW_TEMPERATURE_THRESHOLD);
+  Serial.print("/ Low Humidity: ");
+  Serial.println(LOW_HUMIDITY_THRESHOLD);
 }
 
-// Main Program
-void loop() {
-  unsigned long currentTime = millis();
-
-  if (currentTime - previousTime >= interval) {
-    previousTime = currentTime;
-
-    float temperature = am2320.readTemperature();
-    float humidity = am2320.readHumidity();
-
-    if (!isnan(temperature) && !isnan(humidity)) {
-      // Output environment information
-      Serial.print("Temperature: ");
-      Serial.print(temperature);
-      Serial.print(" °C");
-      Serial.print("\tHumidity: ");
-      Serial.print(humidity);
-      Serial.println(" %");
-
-      // Control relays based on temperature and humidity
-      for (int i = 1; i <= numRelays; i++) {
-        controlRelay(i, i == 1 && (temperature > HIGH_TEMPERATURE_THRESHOLD || humidity > HIGH_HUMIDITY_THRESHOLD) ||
-                      i == 2 && temperature < LOW_TEMPERATURE_THRESHOLD ||
-                      i == 3 && humidity < LOW_HUMIDITY_THRESHOLD, temperature, humidity);
-      }
-
-      // Print relay information
-      printRelayInfo();
-    } else {
-      Serial.println("Failed to read data from AM2320 sensor.");
-    }
-  }
+float readTemperature() {
+  return am2320.readTemperature();
 }
+
+float readHumidity() {
+  return am2320.readHumidity();
+}
+
+unsigned int getTotalMemory() {
+  extern unsigned int __data_start, __data_end, __bss_end;
+  return (unsigned int)&__data_end - (unsigned int)&__data_start + (unsigned int)&__bss_end;
+}
+
+unsigned int getUsedMemory() {
+  extern unsigned int __heap_start;
+  return (unsigned int)&__heap_start - 0x20000000;
+}
+
+unsigned int getTotalStorage() {
+  return getSketchSize();
+}
+
+unsigned int getUsedStorage() {
+  return getSketchSize() - getFreeSketchSpace();
+}
+
+unsigned int getSketchSize() {
+  extern unsigned int __data_start;
+  return (unsigned int)&__data_start - 0x20000000;
+}
+
+unsigned int getFreeSketchSpace() {
+  extern unsigned int __heap_start;
+  return (unsigned int)&__heap_start - 0x20000000;
+}
+
+
