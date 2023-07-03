@@ -16,6 +16,7 @@ The following libraries are used in this script:
 Please make sure you have installed these libraries before using the script. You can install libraries in the Arduino IDE by navigating to "Sketch" -> "Include Library" -> "Manage Libraries" and searching for the library names.
 
 Pinout Instructions (Relay Board)
+
 The script uses three relay pins to control the relays. The relay pins are defined as constants in the script:
 
 **RELAY_1_PIN = 2;**
@@ -32,6 +33,9 @@ The script uses three relay pins to control the relays. The relay pins are defin
 
 Pinout Diagram for Temp/Himidity Sensor: 
 ![AM2320 Sensor GPIO](https://www.makerguides.com/wp-content/uploads/2020/10/AM2320-digital-temperature-and-humidity-sensor-with-Arduino-wiring-diagram-schematic-featured-image.png)
+
+GPIO Information for Arduino Uno:
+![Arduino Uno Pinout](https://images.prismic.io/circuito/8e3a980f0f964cc539b4cbbba2654bb660db6f52_arduino-uno-pinout-diagram.png)
 
 Make sure to connect the relay pins to the appropriate GPIO pins on your Arduino board. In the example above, the relay pins are connected to GPIO pins 2, 3, and 4.
 
