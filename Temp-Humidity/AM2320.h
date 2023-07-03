@@ -3,6 +3,8 @@
 #include <Adafruit_AM2320.h>
 
 Adafruit_AM2320 am2320;
+unsigned long previousTime = 0;
+unsigned long interval = 2000;  // 2-second interval
 
 void setup() {
   Serial.begin(9600);
@@ -11,20 +13,28 @@ void setup() {
 }
 
 void loop() {
-  delay(2000);  // Wait for 2 seconds for accurate readings
+  unsigned long currentTime = millis();
 
-  float temperature = am2320.readTemperature();
-  float humidity = am2320.readHumidity();
+  if (currentTime - previousTime >= interval) {
+    previousTime = currentTime;
 
-  if (!isnan(temperature) && !isnan(humidity)) {
-    Serial.print("Temperature: ");
-    Serial.print(temperature);
-    Serial.print(" °C");
+    float temperature = am2320.readTemperature();
+    float humidity = am2320.readHumidity();
 
-    Serial.print("\tHumidity: ");
-    Serial.print(humidity);
-    Serial.println(" %");
-  } else {
-    Serial.println("Failed to read data from AM2320 sensor.");
+    if (!isnan(temperature) && !isnan(humidity)) {
+      Serial.print("[");
+      Serial.print(currentTime);
+      Serial.print(" ms] ");
+      
+      Serial.print("Temperature: ");
+      Serial.print(temperature);
+      Serial.print(" °C");
+
+      Serial.print("\tHumidity: ");
+      Serial.print(humidity);
+      Serial.println(" %");
+    } else {
+      Serial.println("Failed to read data from AM2320 sensor.");
+    }
   }
 }
