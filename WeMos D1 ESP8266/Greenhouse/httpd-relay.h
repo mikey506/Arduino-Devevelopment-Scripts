@@ -1,8 +1,16 @@
+// ##Pinout Info##
+// Relay 1 (IN1) - D0
+// Relay 2 (IN2) - D1
+// Relay 3 (IN3) - D2
+// Relay 4 (IN4) - D3
+// GND - GND
+// VCC - 5v
+
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 
-const char* ssid = "Martine";     // Enter your WiFi SSID
-const char* password = "martine123"; // Enter your WiFi password
+const char* ssid = "SSID";     // Enter your WiFi SSID
+const char* password = "PASSWORD"; // Enter your WiFi password
 
 ESP8266WebServer server(80);
 
