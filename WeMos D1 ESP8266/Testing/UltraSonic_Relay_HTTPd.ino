@@ -13,17 +13,17 @@ IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
 
 /* Ultrasonic Sensor Pins */
-const int trigPin = D1;  // GPIO5
-const int echoPin = D2;  // GPIO4
+const int trigPin = 5;  // GPIO5
+const int echoPin = 4;  // GPIO4
 
 /* Relay Control Pins */
-const int relay1Pin = D5;  // GPIO14
-const int relay2Pin = D6;  // GPIO12
-const int relay3Pin = D7;  // GPIO13
-const int relay4Pin = D8;  // GPIO15
+const int relay1Pin = 14;  // GPIO14
+const int relay2Pin = 12;  // GPIO12
+const int relay3Pin = 13;  // GPIO13
+const int relay4Pin = 15;  // GPIO15
 
 /* LED Pin */
-const int LEDpin = D4;  // GPIO2
+const int LEDpin = 2;  // GPIO2
 
 /* Sensor and Relay Status */
 float distance = 0.0;
@@ -31,8 +31,23 @@ bool relay1Status = LOW;
 bool relay2Status = LOW;
 bool relay3Status = LOW;
 bool relay4Status = LOW;
+int LEDstatus = LOW; 
 
 ESP8266WebServer server(80);
+
+void handle_OnConnect();
+void handle_ledon();
+void handle_ledoff();
+void handle_getdistance();
+void handle_relay1on();
+void handle_relay1off();
+void handle_relay2on();
+void handle_relay2off();
+void handle_relay3on();
+void handle_relay3off();
+void handle_relay4on();
+void handle_relay4off();
+void handle_NotFound();
 
 void setup() {
   Serial.begin(115200);
@@ -74,6 +89,72 @@ void setup() {
 
   server.begin();
   Serial.println("HTTP server started");
+}
+
+void handle_OnConnect() {
+  String html = SendHTML(LEDstatus);
+  server.send(200, "text/html", html);
+}
+
+void handle_ledon() {
+  LEDstatus = HIGH;
+  String html = SendHTML(LEDstatus);
+  server.send(200, "text/html", html);
+}
+
+void handle_ledoff() {
+  LEDstatus = LOW;
+  String html = SendHTML(LEDstatus);
+  server.send(200, "text/html", html);
+}
+
+void handle_getdistance() {
+  // Implement logic to get distance
+  // Update 'distance' variable
+}
+
+void handle_relay1on() {
+  // Implement logic to turn on relay 1
+  relay1Status = HIGH;
+}
+
+void handle_relay1off() {
+  // Implement logic to turn off relay 1
+  relay1Status = LOW;
+}
+
+void handle_relay2on() {
+  // Implement logic to turn on relay 2
+  relay2Status = HIGH;
+}
+
+void handle_relay2off() {
+  // Implement logic to turn off relay 2
+  relay2Status = LOW;
+}
+
+void handle_relay3on() {
+  // Implement logic to turn on relay 3
+  relay3Status = HIGH;
+}
+
+void handle_relay3off() {
+  // Implement logic to turn off relay 3
+  relay3Status = LOW;
+}
+
+void handle_relay4on() {
+  // Implement logic to turn on relay 4
+  relay4Status = HIGH;
+}
+
+void handle_relay4off() {
+  // Implement logic to turn off relay 4
+  relay4Status = LOW;
+}
+
+void handle_NotFound() {
+  server.send(404, "text/plain", "Not found");
 }
 
 void loop() {
