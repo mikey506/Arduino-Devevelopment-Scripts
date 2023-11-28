@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ESP8266 Web Server</title>
+    <style>
+        html {
+            font-family: Helvetica;
+            display: inline-block;
+            margin: 0px auto;
+            text-align: center;
+        }
+
+        body {
+            margin-top: 50px;
+        }
+
+        .tab {
+            display: none;
+        }
+
+        .tab-content {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .button {
+            display: inline-block;
+            width: 80px;
+            background-color: #1abc9c;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .button-on {
+            background-color: #1abc9c;
+        }
+
+        .button-off {
+            background-color: #34495e;
+        }
+
+        h1 {
+            color: #444444;
+            margin: 20px auto 10px;
+        }
+
+        h2 {
+            color: #444444;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #444444;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="tab" id="home">
+        <div class="tab-content">
+            <h1>Home</h1>
+            <p>Welcome to the ESP8266 Web Server!</p>
+        </div>
+    </div>
+
+    <div class="tab" id="relay">
+        <div class="tab-content">
+            <h2>Relay Control</h2>
+            <button class="button button-on" onclick="toggleRelay(1, 'on')">Relay 1 ON</button>
+            <button class="button button-off" onclick="toggleRelay(1, 'off')">Relay 1 OFF</button><br>
+            <button class="button button-on" onclick="toggleRelay(2, 'on')">Relay 2 ON</button>
+            <button class="button button-off" onclick="toggleRelay(2, 'off')">Relay 2 OFF</button><br>
+            <button class="button button-on" onclick="toggleRelay(3, 'on')">Relay 3 ON</button>
+            <button class="button button-off" onclick="toggleRelay(3, 'off')">Relay 3 OFF</button><br>
+            <button class="button button-on" onclick="toggleRelay(4, 'on')">Relay 4 ON</button>
+            <button class="button button-off" onclick="toggleRelay(4, 'off')">Relay 4 OFF</button>
+        </div>
+    </div>
+
+    <div class="tab" id="ultrasonic">
+        <div class="tab-content">
+            <h2>Ultrasonic Sensor</h2>
+            <p>Real-Time Ultrasonic Sensor Readings:</p>
+            <p id="distance">Distance: N/A cm</p>
+        </div>
+    </div>
+
+    <div class="tab" id="debug">
+        <div class="tab-content">
+            <h2>Debug/Information Section</h2>
+            <p><strong>CPU:</strong> <span id="cpu">N/A</span> MHz</p>
+            <p><strong>Memory:</strong> <span id="memory">N/A</span> bytes (free)</p>
+            <p><strong>Storage Space:</strong> <span id="storage">N/A</span> bytes (total),
+                <span id="freeStorage">N/A</span> bytes (free)</p>
+            <p><strong>Firmware:</strong> <span id="firmware">N/A</span> bytes (size),
+                <span id="availableSpace">N/A</span> bytes (available)</p>
+            <p><strong>Device IP:</strong> <span id="deviceIP">N/A</span></p>
+            <p><strong>MAC Address:</strong> <span id="macAddress">N/A</span></p>
+            <p><strong>Chip ID:</strong> <span id="chipID">N/A</span></p>
+            <p><strong>Core Version:</strong> <span id="coreVersion">N/A</span></p>
+            <p><strong>SDK Version:</strong> <span id="sdkVersion">N/A</span></p>
+            <p><strong>Boot Version:</strong> <span id="bootVersion">N/A</span></p>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            var tabs = document.getElementsByClassName("tab");
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].style.display = "none";
+            }
+            document.getElementById(tabName).style.display = "block";
+        }
+
+        function toggleRelay(relay, state) {
+            // Implement logic to send relay control commands to the server
+            console.log("Relay " + relay + " " + state);
+        }
+    </script>
+</body>
+
+</html>
