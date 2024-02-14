@@ -28,8 +28,10 @@ int LEDstatus = LOW;
 int moistureLevel = 0;  // Variable to store moisture level
 
 bool autoWateringEnabled = false;
-int soilMax = 800; // Maximum soil moisture threshold
-int soilMin = 600; // Minimum soil moisture threshold
+int soilTarget = 500; // Soil moisture target
+int targetRange = 150; // Target range (+/-)
+
+int pumpDuration = 3; // Pump duration in seconds
 
 ESP8266WebServer server(80);
 
@@ -37,6 +39,7 @@ ESP8266WebServer server(80);
 void loadConfig();
 void saveConfig();
 void reboot();
+void handleAutoWatering();
 
 void handle_OnConnect();
 void handle_relayon();
@@ -65,8 +68,6 @@ void setup() {
 
   /* Web Server Setup */
   server.on("/", HTTP_GET, handle_OnConnect);
-  server.on("/relayon", HTTP_GET, handle_relayon);
-  server.on("/relayoff", HTTP_GET, handle_relayoff);
   server.on("/saveconfig", HTTP_POST, handle_SaveConfig);
   server.onNotFound(handle_NotFound);
 
@@ -75,18 +76,6 @@ void setup() {
 }
 
 void handle_OnConnect() {
-  String html = SendHTML(LEDstatus, moistureLevel);
-  server.send(200, "text/html", html);
-}
-
-void handle_relayon() {
-  relayStatus = HIGH;
-  String html = SendHTML(LEDstatus, moistureLevel);
-  server.send(200, "text/html", html);
-}
-
-void handle_relayoff() {
-  relayStatus = LOW;
   String html = SendHTML(LEDstatus, moistureLevel);
   server.send(200, "text/html", html);
 }
@@ -106,10 +95,12 @@ void handle_SaveConfig() {
         subnet.fromString(server.arg(i));
       } else if (server.argName(i) == "autoWatering") {
         autoWateringEnabled = server.arg(i).toInt();
-      } else if (server.argName(i) == "soilMax") {
-        soilMax = server.arg(i).toInt();
-      } else if (server.argName(i) == "soilMin") {
-        soilMin = server.arg(i).toInt();
+      } else if (server.argName(i) == "soilTarget") {
+        soilTarget = server.arg(i).toInt();
+      } else if (server.argName(i) == "targetRange") {
+        targetRange = server.arg(i).toInt();
+      } else if (server.argName(i) == "pumpDuration") {
+        pumpDuration = server.arg(i).toInt();
       }
     }
     saveConfig(); // Save configuration to file
@@ -144,17 +135,8 @@ void loop() {
     moistureDescription = "Swamped";
   }
 
-  /* Update Relay Status */
-  if (autoWateringEnabled && moistureLevel < soilMin) {
-    relayStatus = HIGH; // Turn on pump if moisture is below minimum threshold and auto watering is enabled
-  } else if (moistureLevel > soilMax) {
-    relayStatus = LOW; // Turn off pump if moisture is above maximum threshold
-  }
-
-  digitalWrite(relayControlPin, relayStatus);
-
-  /* Update LED Status */
-  digitalWrite(LEDpin, relayStatus);  // LED status based on relay
+  /* Handle Auto Watering */
+  handleAutoWatering();
 
   /* Output Soil Moisture Level to Serial Monitor */
   Serial.print("Moisture Level: ");
@@ -164,6 +146,52 @@ void loop() {
 
   /* Delay for 1 second */
   delay(1000);
+}
+
+unsigned long lastWateringTime = 0; // Variable to store the last time the water pump was activated
+unsigned long elapsedTime = 0; // Variable to track the elapsed time since the last watering event
+const unsigned long wateringCooldown = 180000; // 3 minutes in milliseconds
+
+void handleAutoWatering() {
+  // Serial.println("Auto watering function called"); // Debug: Check if function is called
+
+  // Check if auto watering is enabled
+  if (autoWateringEnabled) {
+    Serial.print("Cooldown: (");
+    Serial.print(elapsedTime);
+    Serial.print("/");
+    Serial.print(wateringCooldown);
+    Serial.print(") / ");
+    // Serial.println("Auto watering enabled"); // Debug: Check if auto watering is enabled
+
+    // Calculate elapsed time since last watering event
+    elapsedTime = millis() - lastWateringTime;
+
+    // Check if moisture level is above target range and cooldown time has passed
+    if (moistureLevel > (soilTarget + targetRange) && elapsedTime >= wateringCooldown) {
+      Serial.println("Moisture level above target range"); // Debug: Check if moisture level is above target range
+
+      // Turn on pump
+      relayStatus = HIGH;
+      digitalWrite(relayControlPin, relayStatus);
+      delay(pumpDuration * 1000); // Pump for specified duration
+      relayStatus = LOW; // Turn off pump
+      digitalWrite(relayControlPin, relayStatus);
+      lastWateringTime = millis(); // Update last watering time
+      Serial.println("Pump turned on and off"); // Debug: Check if pump is turned on and off
+    } 
+    // Check if moisture level is below target range
+    else if (moistureLevel < (soilTarget - targetRange)) {
+      Serial.println("Moisture level below target range"); // Debug: Check if moisture level is below target range
+
+      // Turn off pump
+      relayStatus = LOW;
+      digitalWrite(relayControlPin, relayStatus);
+      Serial.println("Pump turned off"); // Debug: Check if pump is turned off
+    }
+  } else {
+    Serial.println("Auto watering disabled"); // Debug: Check if auto watering is disabled
+  }
 }
 
 
@@ -182,16 +210,9 @@ String SendHTML(uint8_t ledstat, int moisture) {
   ptr +="</style>\n";
   ptr +="</head>\n";
   ptr +="<body>\n";
-  ptr +="<h1>ESP8266 Web Server</h1>\n";
-  ptr +="<h3>Using Access Point(AP) Mode</h3>\n";
+  ptr +="<h1>Plant Bot - Soil just Moisty </h1>\n";
+  ptr +="This program is designed for automated plant watering using an ESP8266 microcontroller. It utilizes soil moisture sensors to monitor the moisture level of the soil and activates a water pump when the moisture level falls below a specified threshold. The program includes functionalities to configure settings such as WiFi credentials, IP address details, auto-watering enable/disable, soil moisture target level, target range, and pump duration through a web interface.<br>\n";
   
-  ptr += "<p>Relay Status: ";
-  if (relayStatus) {
-    ptr += "ON</p><a class=\"button button-off\" href=\"/relayoff\">Turn Relay OFF</a>\n";
-  } else {
-    ptr += "OFF</p><a class=\"button button-on\" href=\"/relayon\">Turn Relay ON</a>\n";
-  }
-
   // Display Moisture Level
   ptr += "<p>Moisture Level: " + String(moisture) + "</p>\n";
 
@@ -214,8 +235,9 @@ String SendHTML(uint8_t ledstat, int moisture) {
   ptr += "<label>Auto Watering:</label><input type=\"checkbox\" name=\"autoWatering\" value=\"1\"";
   if (autoWateringEnabled) ptr += " checked";
   ptr += "><br>";
-  ptr += "<label>Soil Max:</label><input type=\"number\" name=\"soilMax\" value=\"" + String(soilMax) + "\"><br>";
-  ptr += "<label>Soil Min:</label><input type=\"number\" name=\"soilMin\" value=\"" + String(soilMin) + "\"><br>";
+  ptr += "<label>Soil Target:</label><input type=\"number\" name=\"soilTarget\" value=\"" + String(soilTarget) + "\"><br>";
+  ptr += "<label>Target Range:</label><input type=\"number\" name=\"targetRange\" value=\"" + String(targetRange) + "\"><br>";
+  ptr += "<label>Pump Duration:</label><input type=\"number\" name=\"pumpDuration\" value=\"" + String(pumpDuration) + "\"><br>";
   ptr += "<input type=\"submit\" value=\"Save Config\">";
   ptr += "</form>";
 
@@ -241,6 +263,34 @@ String SendHTML(uint8_t ledstat, int moisture) {
   return ptr;
 }
 
+
+
+void saveConfig() {
+  File configFile = SPIFFS.open("/config.json", "w");
+  if (!configFile) {
+    Serial.println("Failed to open config file for writing");
+    return;
+  }
+
+  // Create JSON object
+  DynamicJsonDocument json(1024);
+  json["ssid"] = ssid;
+  json["password"] = password;
+  json["ip"] = WiFi.softAPIP().toString();
+  json["gateway"] = gateway.toString();
+  json["subnet"] = subnet.toString();
+  json["autoWateringEnabled"] = autoWateringEnabled;
+  json["soilTarget"] = soilTarget;
+  json["targetRange"] = targetRange;
+  json["pumpDuration"] = pumpDuration;
+
+  // Serialize JSON to file
+  if (serializeJson(json, configFile) == 0) {
+    Serial.println(F("Failed to write to file"));
+  }
+
+  configFile.close();
+}
 void loadConfig() {
   if (SPIFFS.begin()) {
     Serial.println("File system mounted");
@@ -261,11 +311,14 @@ void loadConfig() {
           gateway.fromString(json["gateway"].as<String>());
           subnet.fromString(json["subnet"].as<String>());
           autoWateringEnabled = json["autoWateringEnabled"].as<bool>();
-          soilMax = json["soilMax"].as<int>();
-          soilMin = json["soilMin"].as<int>();
+          soilTarget = json["soilTarget"].as<int>();
+          targetRange = json["targetRange"].as<int>();
+          pumpDuration = json["pumpDuration"].as<int>();
         } else {
           Serial.println("Failed to parse config file");
         }
+      } else {
+        Serial.println("Failed to open config file");
       }
     } else {
       Serial.println("Config file not found");
@@ -275,31 +328,6 @@ void loadConfig() {
   }
 }
 
-void saveConfig() {
-  File configFile = SPIFFS.open("/config.json", "w");
-  if (!configFile) {
-    Serial.println("Failed to open config file for writing");
-    return;
-  }
-
-  // Create JSON object
-  DynamicJsonDocument json(1024);
-  json["ssid"] = ssid;
-  json["password"] = password;
-  json["ip"] = WiFi.softAPIP().toString();
-  json["gateway"] = gateway.toString();
-  json["subnet"] = subnet.toString();
-  json["autoWateringEnabled"] = autoWateringEnabled;
-  json["soilMax"] = soilMax;
-  json["soilMin"] = soilMin;
-
-  // Serialize JSON to file
-  if (serializeJson(json, configFile) == 0) {
-    Serial.println(F("Failed to write to file"));
-  }
-
-  configFile.close();
-}
 
 void reboot() {
   ESP.restart(); // Reboot the device
