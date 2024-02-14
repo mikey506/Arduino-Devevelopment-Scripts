@@ -1,11 +1,12 @@
+#include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <FS.h>
 
 /* WiFi credentials */
-const char* ssid = "NodeMCU";
-const char* password = "12345678";
+String ssid = "NodeMCU";
+String password = "12345678";
 
 /* IP Address details */
 IPAddress local_ip(192,168,1,1);
@@ -26,24 +27,35 @@ bool relayStatus = LOW;
 int LEDstatus = LOW;
 int moistureLevel = 0;  // Variable to store moisture level
 
+bool autoWateringEnabled = false;
+int soilMax = 800; // Maximum soil moisture threshold
+int soilMin = 600; // Minimum soil moisture threshold
+
 ESP8266WebServer server(80);
-// Declare the SendHTML function
-String SendHTML(uint8_t ledstat, int moisture);
+
+// Function prototypes
+void loadConfig();
+void saveConfig();
+void reboot();
 
 void handle_OnConnect();
 void handle_relayon();
 void handle_relayoff();
+void handle_SaveConfig();
 void handle_NotFound();
 
 void setup() {
   Serial.begin(9600); // Set baud rate to 9600
+
+  // Load configuration
+  loadConfig();
 
   pinMode(LEDpin, OUTPUT);
   pinMode(relayControlPin, OUTPUT);
   pinMode(moistureSensorPin, INPUT);
 
   /* WiFi Setup */
-  WiFi.softAP(ssid, password);
+  WiFi.softAP(ssid.c_str(), password.c_str());
   WiFi.softAPConfig(local_ip, gateway, subnet);
   delay(100);
 
@@ -55,6 +67,7 @@ void setup() {
   server.on("/", HTTP_GET, handle_OnConnect);
   server.on("/relayon", HTTP_GET, handle_relayon);
   server.on("/relayoff", HTTP_GET, handle_relayoff);
+  server.on("/saveconfig", HTTP_POST, handle_SaveConfig);
   server.onNotFound(handle_NotFound);
 
   server.begin();
@@ -78,6 +91,33 @@ void handle_relayoff() {
   server.send(200, "text/html", html);
 }
 
+void handle_SaveConfig() {
+  if (server.args() > 0) {
+    for (int i = 0; i < server.args(); i++) {
+      if (server.argName(i) == "ssid") {
+        ssid = server.arg(i);
+      } else if (server.argName(i) == "password") {
+        password = server.arg(i);
+      } else if (server.argName(i) == "ip") {
+        local_ip.fromString(server.arg(i));
+      } else if (server.argName(i) == "gateway") {
+        gateway.fromString(server.arg(i));
+      } else if (server.argName(i) == "subnet") {
+        subnet.fromString(server.arg(i));
+      } else if (server.argName(i) == "autoWatering") {
+        autoWateringEnabled = server.arg(i).toInt();
+      } else if (server.argName(i) == "soilMax") {
+        soilMax = server.arg(i).toInt();
+      } else if (server.argName(i) == "soilMin") {
+        soilMin = server.arg(i).toInt();
+      }
+    }
+    saveConfig(); // Save configuration to file
+    reboot(); // Reboot the device after updating configuration
+  }
+  server.send(200, "text/plain", "Configuration saved successfully");
+}
+
 void handle_NotFound() {
   server.send(404, "text/plain", "Not found");
 }
@@ -85,44 +125,47 @@ void handle_NotFound() {
 void loop() {
   server.handleClient();
 
+  /* Read Soil Moisture Level */
+  moistureLevel = analogRead(moistureSensorPin);
+
+  /* Map the raw reading to a descriptive scale */
+  String moistureDescription;
+  if (moistureLevel >= 900 && moistureLevel <= 1024) {
+    moistureDescription = "Air/Dry As Fuck";
+  } else if (moistureLevel >= 700 && moistureLevel < 900) {
+    moistureDescription = "Fresh Soil";
+  } else if (moistureLevel >= 600 && moistureLevel < 700) {
+    moistureDescription = "Watered Well";
+  } else if (moistureLevel >= 400 && moistureLevel < 500) {
+    moistureDescription = "Perfect";
+  } else if (moistureLevel >= 300 && moistureLevel < 400) {
+    moistureDescription = "Saturated";
+  } else if (moistureLevel >= 1 && moistureLevel < 300) {
+    moistureDescription = "Swamped";
+  }
+
   /* Update Relay Status */
+  if (autoWateringEnabled && moistureLevel < soilMin) {
+    relayStatus = HIGH; // Turn on pump if moisture is below minimum threshold and auto watering is enabled
+  } else if (moistureLevel > soilMax) {
+    relayStatus = LOW; // Turn off pump if moisture is above maximum threshold
+  }
+
   digitalWrite(relayControlPin, relayStatus);
 
   /* Update LED Status */
   digitalWrite(LEDpin, relayStatus);  // LED status based on relay
 
-  /* Read Soil Moisture Level */
-  int rawMoistureLevel = analogRead(moistureSensorPin);
-
-  /* Map the raw reading to a scale of 1-5 */
-  int moistureRating;
-  if (rawMoistureLevel <= 333) {
-    moistureRating = 1; // Super Moist
-  } else if (rawMoistureLevel <= 700) {
-    moistureRating = 2; // Lil Moist
-  } else {
-    moistureRating = 3; // Dry AF
-  }
-
   /* Output Soil Moisture Level to Serial Monitor */
-/*  Serial.print("Moisture Level (Raw): ");
-  Serial.println(rawMoistureLevel); */
-  Serial.print("Moisture Rating: ");
-  switch (moistureRating) {
-    case 1:
-      Serial.println("Super Moist");
-      break;
-    case 2:
-      Serial.println("Lil Moist");
-      break;
-    case 3:
-      Serial.println("Dry AF");
-      break;
-  }
+  Serial.print("Moisture Level: ");
+  Serial.print(moistureLevel);
+  Serial.print(" - ");
+  Serial.println(moistureDescription);
 
   /* Delay for 1 second */
   delay(1000);
 }
+
 
 String SendHTML(uint8_t ledstat, int moisture) {
   String ptr = "<!DOCTYPE html> <html>\n";
@@ -152,6 +195,30 @@ String SendHTML(uint8_t ledstat, int moisture) {
   // Display Moisture Level
   ptr += "<p>Moisture Level: " + String(moisture) + "</p>\n";
 
+  // Display Auto Watering Status
+  ptr += "<p>Auto Watering: ";
+  if (autoWateringEnabled) {
+    ptr += "Enabled</p>\n";
+  } else {
+    ptr += "Disabled</p>\n";
+  }
+
+  // Configurations Form
+  ptr += "<form action=\"/saveconfig\" method=\"post\">";
+  ptr += "<h3>Configuration</h3>";
+  ptr += "<label>SSID:</label><input type=\"text\" name=\"ssid\" value=\"" + ssid + "\"><br>";
+  ptr += "<label>Password:</label><input type=\"password\" name=\"password\" value=\"" + password + "\"><br>";
+  ptr += "<label>IP Address:</label><input type=\"text\" name=\"ip\" value=\"" + WiFi.softAPIP().toString() + "\"><br>";
+  ptr += "<label>Gateway:</label><input type=\"text\" name=\"gateway\" value=\"" + gateway.toString() + "\"><br>";
+  ptr += "<label>Subnet Mask:</label><input type=\"text\" name=\"subnet\" value=\"" + subnet.toString() + "\"><br>";
+  ptr += "<label>Auto Watering:</label><input type=\"checkbox\" name=\"autoWatering\" value=\"1\"";
+  if (autoWateringEnabled) ptr += " checked";
+  ptr += "><br>";
+  ptr += "<label>Soil Max:</label><input type=\"number\" name=\"soilMax\" value=\"" + String(soilMax) + "\"><br>";
+  ptr += "<label>Soil Min:</label><input type=\"number\" name=\"soilMin\" value=\"" + String(soilMin) + "\"><br>";
+  ptr += "<input type=\"submit\" value=\"Save Config\">";
+  ptr += "</form>";
+
   // Debug/Information Section
   ptr +="<h3>Debug/Information Section</h3>\n";
   ptr +="<p><strong>CPU:</strong> " + String(ESP.getCpuFreqMHz()) + " MHz</p>\n";
@@ -172,4 +239,68 @@ String SendHTML(uint8_t ledstat, int moisture) {
   ptr +="</body>\n";
   ptr +="</html>\n";
   return ptr;
+}
+
+void loadConfig() {
+  if (SPIFFS.begin()) {
+    Serial.println("File system mounted");
+
+    if (SPIFFS.exists("/config.json")) {
+      Serial.println("Reading config file");
+      File configFile = SPIFFS.open("/config.json", "r");
+      if (configFile) {
+        size_t size = configFile.size();
+        std::unique_ptr<char[]> buf(new char[size]);
+        configFile.readBytes(buf.get(), size);
+        DynamicJsonDocument json(1024);
+        DeserializationError error = deserializeJson(json, buf.get());
+        if (!error) {
+          ssid = json["ssid"].as<String>();
+          password = json["password"].as<String>();
+          local_ip.fromString(json["ip"].as<String>());
+          gateway.fromString(json["gateway"].as<String>());
+          subnet.fromString(json["subnet"].as<String>());
+          autoWateringEnabled = json["autoWateringEnabled"].as<bool>();
+          soilMax = json["soilMax"].as<int>();
+          soilMin = json["soilMin"].as<int>();
+        } else {
+          Serial.println("Failed to parse config file");
+        }
+      }
+    } else {
+      Serial.println("Config file not found");
+    }
+  } else {
+    Serial.println("Failed to mount file system");
+  }
+}
+
+void saveConfig() {
+  File configFile = SPIFFS.open("/config.json", "w");
+  if (!configFile) {
+    Serial.println("Failed to open config file for writing");
+    return;
+  }
+
+  // Create JSON object
+  DynamicJsonDocument json(1024);
+  json["ssid"] = ssid;
+  json["password"] = password;
+  json["ip"] = WiFi.softAPIP().toString();
+  json["gateway"] = gateway.toString();
+  json["subnet"] = subnet.toString();
+  json["autoWateringEnabled"] = autoWateringEnabled;
+  json["soilMax"] = soilMax;
+  json["soilMin"] = soilMin;
+
+  // Serialize JSON to file
+  if (serializeJson(json, configFile) == 0) {
+    Serial.println(F("Failed to write to file"));
+  }
+
+  configFile.close();
+}
+
+void reboot() {
+  ESP.restart(); // Reboot the device
 }
