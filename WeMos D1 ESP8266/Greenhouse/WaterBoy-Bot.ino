@@ -210,7 +210,7 @@ String SendHTML(uint8_t ledstat, int moisture) {
   ptr +="</style>\n";
   ptr +="</head>\n";
   ptr +="<body>\n";
-  ptr +="<h1>Plant Bot - Soil just Moisty </h1>\n";
+  ptr +="<h1>W - Soil just Moisty </h1>\n";
   ptr +="This program is designed for automated plant watering using an ESP8266 microcontroller. It utilizes soil moisture sensors to monitor the moisture level of the soil and activates a water pump when the moisture level falls below a specified threshold. The program includes functionalities to configure settings such as WiFi credentials, IP address details, auto-watering enable/disable, soil moisture target level, target range, and pump duration through a web interface.<br>\n";
   
   // Display Moisture Level
