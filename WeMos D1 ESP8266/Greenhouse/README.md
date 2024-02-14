@@ -14,7 +14,7 @@ The soil moisture sensor typically has four pins: VCC, GND, AO (Analog Output), 
 
 **DO** (Digital Output): Optional. Connect to a digital input pin if you want to use the digital output.
 
-# Single Channel Relay:
+## Single Channel Relay:
 
 The single-channel relay typically has three pins: VCC, GND, and IN (Control Input). Here's how you can connect it:
 
