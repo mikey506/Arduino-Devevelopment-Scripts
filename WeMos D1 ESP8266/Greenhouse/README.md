@@ -1,4 +1,4 @@
-# auto_pot-soil_irrigation.ino
+# WaterBoy-Bot.ino
 
 Script utilizing 1ch relay and soil moisture sensor to automate watering for potted soil.
 
