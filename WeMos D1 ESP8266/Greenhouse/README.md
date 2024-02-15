@@ -1,3 +1,6 @@
+
+![image](https://github.com/mikey506/Arduino-Devevelopment-Scripts/assets/13043850/100b0964-e649-4dad-9aaf-4fa09b202a3a)
+
 # WaterBoy-Bot.ino
 
 Script utilizing 1ch relay and soil moisture sensor to automate watering for potted soil.
