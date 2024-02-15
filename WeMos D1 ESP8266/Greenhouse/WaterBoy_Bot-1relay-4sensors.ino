@@ -153,7 +153,7 @@ void handleAutoWatering(int averageMoisture) {
 String SendHTML(uint8_t ledstat, int moisture) {
   String ptr = "<!DOCTYPE html> <html>\n";
   ptr +="<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n";
-  ptr +="<title>ESP8266 Web Server</title>\n";
+  ptr +="<title>WaterBoy Bot - Dashboard</title>\n";
   ptr +="<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
   ptr +="body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;} h3 {color: #444444;margin-bottom: 50px;}\n";
   ptr +=".button {display: block;width: 80px;background-color: #1abc9c;border: none;color: white;padding: 13px 30px;text-decoration: none;font-size: 25px;margin: 0px auto 35px;cursor: pointer;border-radius: 4px;}\n";
@@ -165,8 +165,8 @@ String SendHTML(uint8_t ledstat, int moisture) {
   ptr +="</style>\n";
   ptr +="</head>\n";
   ptr +="<body>\n";
-  ptr +="<h1>W - Soil just Moisty </h1>\n";
-  ptr +="This program is designed for automated plant watering using an ESP8266 microcontroller. It utilizes soil moisture sensors to monitor the moisture level of the soil and activates a water pump when the moisture level falls below a specified threshold. The program includes functionalities to configure settings such as WiFi credentials, IP address details, auto-watering enable/disable, soil moisture target level, target range, and pump duration through a web interface.<br>\n";
+  ptr +="<h1>WaterBoy Bot - “Now that’s what I call high-quality H2O.”</h1>\n";
+  ptr +="This program is designed for automated plant watering using an ESP8266 microcontroller and 4 soil moisture sensors. It utilizes soil moisture sensors to monitor the moisture level of the soil and activates a water pump when the moisture level falls below a specified threshold. The program includes functionalities to configure settings such as WiFi credentials, IP address details, auto-watering enable/disable, soil moisture target level, target range, and pump duration through a web interface.<br>\n";
   
   // Display Moisture Level
   ptr += "<p>Moisture Level: " + String(moisture) + "</p>\n";
